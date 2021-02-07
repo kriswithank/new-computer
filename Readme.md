@@ -1,5 +1,5 @@
 # new-computer
-Post-install scripts to atuomatically set up a new computer
+Post-install scripts to automatically set up a new computer
 
 # Arch Linux
 
