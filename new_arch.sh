@@ -231,7 +231,7 @@ installpacmanpkgs() {
     feh                       # Image viewer
     xdot                      # graphviz viewer
   )
-  sudo pacman --noconfirm --needed -S \
+  pacman --noconfirm --needed -S \
     "${low_level_packages[@]}" \
     "${driver_packages[@]}" \
     "${file_system_packages[@]}" \

@@ -10,6 +10,7 @@ Additionally make sure you install `networkmanager` (or some other way to connec
 After booting into the freshly installed system, simply run the following:
 
 ```
+cd /tmp
 curl -LO https://raw.githubusercontent.com/kriswithank/new-computer/main/new_arch.sh
-./new_arch.sh
+bash ./new_arch.sh
 ```
