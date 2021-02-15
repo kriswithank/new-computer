@@ -40,7 +40,7 @@ welcomemsg() {
 }
 
 getuserandpass() {
-  name=$(dialog --stdout --inputbox "Enter username" 0 0 2>/tmp/username) || return 1
+  name=$(dialog --stdout --inputbox "Enter username" 0 0) || return 1
   while ! echo "$name" | grep -q "^[a-z_][a-z0-9_-]*$"; do
     name=$(dialog --stdout --no-cancel --inputbox "Username not valid, must start with a lowercase letter and contain only lowercase letters, -, or _" 0 0) ||
       return 1
