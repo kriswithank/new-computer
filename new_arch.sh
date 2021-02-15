@@ -247,10 +247,14 @@ pacman --noconfirm --needed -Sy dialog ||
 
 numsteps=10
 
-(welcomemsg && getuserandpass && confirmationmsg) || exiterror "User exited"
-(refreshkeyring 2>&1 | dialog_progress "1/$numsteps Updating keyring") ||
+{ welcomemsg && getuserandpass && confirmationmsg; } ||
+  exiterror "User exited"
+
+{ refreshkeyring 2>&1 | dialog_progress "1/$numsteps Updating keyring"; } ||
   confirmerror "Could not update keyring, consider doing so manually"
-(installpacmanpkgs 2>&1 | dialog_progress "2/$numsteps Installing pacman packages") ||
+
+{ installpacmanpkgs 2>&1 | dialog_progress "2/$numsteps Installing pacman packages"; } ||
   confirmerror "Could not install pacman packages"
-(dialog --infobox "3/$numsteps: Creating/updating user" 30 1000 && createuser) ||
+
+{ dialog --infobox "3/$numsteps: Creating/updating user" 30 1000 && createuser; } ||
   exiterror "Problem creating or updating user"
