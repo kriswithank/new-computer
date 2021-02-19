@@ -75,6 +75,15 @@ refreshkeyring() {
   set +x
 }
 
+updatesudoers() {
+  set -x
+  # Allow wheel users to use sudo
+  echo "%wheel   ALL=(ALL) ALL" >> /etc/sudoers
+  # Allow wheel users to run the following commands without a password
+  echo "%wheel ALL=(ALL) NOPASSWD: /usr/bin/shutdown,/usr/bin/reboot,/usr/bin/systemctl suspend,/usr/bin/mount,/usr/bin/umount,/usr/bin/pacman -Syu,/usr/bin/pacman -Syyu,/usr/bin/systemctl restart NetworkManager" >> /etc/sudoers
+  set +x
+}
+
 makepacmanandyaycolorful() {
   set -x
   grep -q "^Color" /etc/pacman.conf ||
@@ -234,6 +243,7 @@ installpacmanpkgs() {
 }
 
 createuser() {
+  set -x
   createnewuser() {
     useradd -m -g wheel -s /bin/zsh "$name"
   }
@@ -243,6 +253,8 @@ createuser() {
       chown "$name":wheel /home/"$name"
   }
   createnewuser || updateexistinguser
+  set +x
+  # Don't want to log the password...
   echo "$name:$pass1" | chpasswd
   unset pass1 pass2
 }
@@ -261,6 +273,16 @@ disablesystembeep() {
   echo "blacklist pcspkr" | tee /etc/modprobe.d/nobeep.conf
 }
 
+setupdotfiles() {
+  # See https://www.anand-iyer.com/blog/2018/a-simpler-way-to-manage-your-dotfiles.html
+  set -x
+  mkdir -p "/home/$name/Projects"
+  git clone --separate-git-dir="/home/$name/Projects/dotfiles" https://github.com/kriswithank/dotfiles.git /tmp/dotfiles
+  rsync --recursive --verbose --exclude '.git' /tmp/dotfiles "home/$name"
+  # TODO switch git to ssh after initial download
+  set +x
+}
+
 ### ACTUAL SCRIPT
 
 pacman --noconfirm --needed -Sy dialog ||
@@ -275,25 +297,29 @@ numsteps=10
 { refreshkeyring 2>&1 | dialog_progress "1/$numsteps Updating keyring"; } ||
   confirmerror "Could not update keyring, consider doing so manually"
 
-{ makepacmanandyaycolorful 2>&1 | dialog_progress "2/$numsteps Making pacman colorful"; } ||
+{ updatesudoers 2>&1 | dialog_progress "2/$numsteps Updating sudoers"; } ||
+  confirmerror "Could not update sudoers"
+
+{ makepacmanandyaycolorful 2>&1 | dialog_progress "3/$numsteps Making pacman colorful"; } ||
   confirmerror "Could not add pretty colors to pacman"
 
-{ installpacmanpkgs 2>&1 | dialog_progress "3/$numsteps Installing pacman packages"; } ||
+{ installpacmanpkgs 2>&1 | dialog_progress "4/$numsteps Installing pacman packages"; } ||
   confirmerror "Could not install pacman packages"
 
-{ dialog --infobox "4/$numsteps: Creating/updating user" 30 1000 && createuser; } ||
+{ dialog --infobox "5/$numsteps: Creating/updating user" 30 1000 && createuser; } ||
   exiterror "Problem creating or updating user"
 
-{ installaurhelper 2>&1 | dialog_progress "5/$numsteps Installing AUR helper"; } ||
+{ installaurhelper 2>&1 | dialog_progress "6/$numsteps Installing AUR helper"; } ||
   confirmerror "Could not install AUR helper"
 
-{ disablesystembeep 2>&1 | dialog_progress "6/$numsteps Diabling system beep"; } ||
+{ disablesystembeep 2>&1 | dialog_progress "7/$numsteps Diabling system beep"; } ||
   confirmerror "Could not disable system beep"
+
+{ setupdotfiles 2>&1 | dialog_progress "8/$numsteps Setting up dotfiles"; } ||
+  confirmerror "Could not setup dotfiles"
 
 # TODO:
 # pip/pipx packages
-# new perms
-# dotfiles
+# temp perms?
 # Clone from backup?
 # dmenu emojis
-# add to sudoers
