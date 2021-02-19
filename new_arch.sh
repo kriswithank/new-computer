@@ -69,23 +69,19 @@ confirmationmsg() {
     0 0
 }
 
-createuser() {
-  createnewuser() {
-    useradd -m -g wheel -s /bin/zsh "$name"
-  }
-  updateexistinguser() {
-    usermod -a -G wheel "$name" &&
-      mkdir -p /home/"$name" &&
-      chown "$name":wheel /home/"$name"
-  }
-  createnewuser || updateexistinguser
-  echo "$name:$pass1" | chpasswd
-  unset pass1 pass2
-}
-
 refreshkeyring() {
   set -x
   pacman --noconfirm -S archlinux-keyring
+  set +x
+}
+
+makepacmanandyaycolorful() {
+  set -x
+  grep -q "^Color" /etc/pacman.conf ||
+    sed -i "s/^#Color$/Color/" /etc/pacman.conf
+  grep -q "ILoveCandy" /etc/pacman.conf ||
+    sed -i "/#VerbosePkgLists/a ILoveCandy" /etc/pacman.conf
+  set +x
 }
 
 installpacmanpkgs() {
@@ -118,34 +114,34 @@ installpacmanpkgs() {
     reiserfsprogs # ReiserFS utils
   )
   compression_packages=(
-    tar 
-    zip 
-    unzip 
-    bzip2 
-    p7zip 
-    unrar 
+    tar
+    zip
+    unzip
+    bzip2
+    p7zip
+    unrar
   )
   audio_packages=(
-    pulseaudio            # Sound server
-    pulseaudio-alsa       # Force application that explicitly use alsa to go through PulseAudio
-    pulseaudio-bluetooth  # Audio over bluetooth
-    pulseaudio-jack       # Allow PulseAudio and JACK to play nice
-    pulsemixer            # PulseAudio TUI
-    pamixer               # PulseAudio CLI
+    pulseaudio           # Sound server
+    pulseaudio-alsa      # Force application that explicitly use alsa to go through PulseAudio
+    pulseaudio-bluetooth # Audio over bluetooth
+    pulseaudio-jack      # Allow PulseAudio and JACK to play nice
+    pulsemixer           # PulseAudio TUI
+    pamixer              # PulseAudio CLI
   )
   networking_packages=(
-    networkmanager 
-    networkmanager-openconnect 
-    networkmanager-openvpn 
-    networkmanager-pptp 
-    networkmanager-vpnc 
+    networkmanager
+    networkmanager-openconnect
+    networkmanager-openvpn
+    networkmanager-pptp
+    networkmanager-vpnc
     networkmanager-strongswan
-    networkmanager-fortisslvpn 
-    network-manager-sstp 
-    mobile-broadband-provider-info  # Info for NM to connect to mobile connections
-    modemmanager  # Mobile modem management
-    iputils  # ping and other tools
-    openssh 
+    networkmanager-fortisslvpn
+    network-manager-sstp
+    mobile-broadband-provider-info # Info for NM to connect to mobile connections
+    modemmanager                   # Mobile modem management
+    iputils                        # ping and other tools
+    openssh
   )
   basic_tool_packages=(
     man-db                  # Manpage tooling
@@ -191,8 +187,6 @@ installpacmanpkgs() {
   )
   dev_tool_packages=(
     gdb            # GNU debugger
-    go             # Go lang compiler and tools
-    rust           # Rust lang
     npm            # Node package manager
     pyenv          # Manage multiple python versions
     shellcheck     # Lint shell scripts
@@ -221,7 +215,6 @@ installpacmanpkgs() {
     zathura                   # PDF viewer
     zathura-pdf-mupdf         # Zathura mupdf support
     chromium                  # Web browser
-    firefox                   # Web browser
     firefox-developer-edition # Web browser
     vlc                       # Video player
     feh                       # Image viewer
@@ -237,24 +230,70 @@ installpacmanpkgs() {
     "${basic_tool_packages[@]}" \
     "${dev_tool_packages[@]}" \
     "${graphical_packages[@]}"
+  set +x
 }
 
+createuser() {
+  createnewuser() {
+    useradd -m -g wheel -s /bin/zsh "$name"
+  }
+  updateexistinguser() {
+    usermod -a -G wheel "$name" &&
+      mkdir -p /home/"$name" &&
+      chown "$name":wheel /home/"$name"
+  }
+  createnewuser || updateexistinguser
+  echo "$name:$pass1" | chpasswd
+  unset pass1 pass2
+}
+
+installaurhelper() {
+  set -x
+  cd /tmp || return 1
+  git clone https://aur.archlinux.org/yay.git
+  cd yay || return 1
+  makepkg -si
+  set +x
+}
+
+disablesystembeep() {
+  rmmod pcspkr
+  echo "blacklist pcspkr" | tee /etc/modprobe.d/nobeep.conf
+}
 
 ### ACTUAL SCRIPT
 
 pacman --noconfirm --needed -Sy dialog ||
   exiterror "Could not install dialog. This should only be run as root on Arch-based distros with an internet connection"
 
-numsteps=10
-
 { welcomemsg && getuserandpass && confirmationmsg; } ||
   exiterror "User exited"
+
+# No more user input from here on out
+numsteps=10
 
 { refreshkeyring 2>&1 | dialog_progress "1/$numsteps Updating keyring"; } ||
   confirmerror "Could not update keyring, consider doing so manually"
 
-{ installpacmanpkgs 2>&1 | dialog_progress "2/$numsteps Installing pacman packages"; } ||
+{ makepacmanandyaycolorful 2>&1 | dialog_progress "2/$numsteps Making pacman colorful"; } ||
+  confirmerror "Could not add pretty colors to pacman"
+
+{ installpacmanpkgs 2>&1 | dialog_progress "3/$numsteps Installing pacman packages"; } ||
   confirmerror "Could not install pacman packages"
 
-{ dialog --infobox "3/$numsteps: Creating/updating user" 30 1000 && createuser; } ||
+{ dialog --infobox "4/$numsteps: Creating/updating user" 30 1000 && createuser; } ||
   exiterror "Problem creating or updating user"
+
+{ installaurhelper 2>&1 | dialog_progress "5/$numsteps Installing AUR helper"; } ||
+  confirmerror "Could not install AUR helper"
+
+{ disablesystembeep 2>&1 | dialog_progress "6/$numsteps Diabling system beep"; } ||
+  confirmerror "Could not disable system beep"
+
+# TODO:
+# pip/pipx packages
+# new perms
+# dotfiles
+# Clone from backup?
+# dmenu emojis
+# add to sudoers
