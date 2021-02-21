@@ -78,10 +78,20 @@ refreshkeyring() {
 
 updatesudoers() {
   set -x
-  # Allow wheel users to use sudo
-  echo "%wheel   ALL=(ALL) ALL" >> /etc/sudoers
-  # Allow wheel users to run the following commands without a password
-  echo "%wheel ALL=(ALL) NOPASSWD: /usr/bin/shutdown,/usr/bin/reboot,/usr/bin/systemctl suspend,/usr/bin/mount,/usr/bin/umount,/usr/bin/pacman -Syu,/usr/bin/pacman -Syyu,/usr/bin/systemctl restart NetworkManager" >> /etc/sudoers
+  {
+    # Allow wheel users to use sudo
+    echo "%wheel   ALL=(ALL) ALL"
+    # Allow wheel users to run the following commands without a password
+    echo "%wheel ALL=(ALL) NOPASSWD: /usr/bin/shutdown,/usr/bin/reboot,/usr/bin/systemctl suspend,/usr/bin/mount,/usr/bin/umount,/usr/bin/pacman -Syu,/usr/bin/pacman -Syyu,/usr/bin/systemctl restart NetworkManager"
+    # Run all sudo commands without a password (required for AUR builds) will be removed afterwards
+    echo "%wheel ALL=(ALL) NOPASSWD: ALL  # DELETEME"
+  } >> /etc/sudoers
+  set +x
+}
+
+cleanupsudoers() {
+  set -x
+  sed -i "/# DELETEME$/d" /etc/sudoers
   set +x
 }
 
@@ -263,7 +273,7 @@ createuser() {
 installaurhelper() {
   set -x
   cd /tmp || return 1
-  git clone https://aur.archlinux.org/yay.git
+  sudo -u "$name" git clone https://aur.archlinux.org/yay.git
   cd yay || return 1
   sudo -u "$name" makepkg --noconfirm -si
   set +x
@@ -318,6 +328,9 @@ numsteps=10
 
 { setupdotfiles 2>&1 | dialog_progress "8/$numsteps Setting up dotfiles"; } ||
   confirmerror "Could not setup dotfiles"
+
+{ cleanupsudoers 2>&1 | dialog_progress "9/$numsteps Cleaning up sudoers"; } ||
+  confirmerror "Could not clean up sudoers"
 
 # TODO:
 # pip/pipx packages
