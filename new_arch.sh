@@ -186,8 +186,8 @@ installpacmanpkgs() {
     wget                    # Download files
     curl                    # Download files
     httpie                  # Curl with sane syntax
-    rsync                   # Sync files between computers
-    unison                  # Alterative to rsync supporting diff based sync
+    rsync                   # Sync files
+    unison                  # rsync but better at bi-directional sync
     tree                    # List dirs as a tree
     bc                      # Calculator
     gawk                    # GNU awk
@@ -198,6 +198,7 @@ installpacmanpkgs() {
     htop                    # Task/Process manager
     sxhkd                   # Simple X hotkey daemon for keybindings
     neovim                  # Editor of choice
+    vi                      # Just in case
     vim                     # Backup editor
     ranger                  # File manager
     pandoc                  # Convert between filetypes
@@ -288,9 +289,9 @@ disablesystembeep() {
 setupdotfiles() {
   # See https://www.anand-iyer.com/blog/2018/a-simpler-way-to-manage-your-dotfiles.html
   set -x
-  mkdir -p "/home/$name/Projects"
-  git clone --separate-git-dir="/home/$name/Projects/dotfiles" https://github.com/kriswithank/dotfiles.git /tmp/dotfiles
-  rsync --recursive --verbose --exclude '.git' /tmp/dotfiles "home/$name"
+  sudo -u "$name" mkdir -p "/home/$name/Projects"
+  sudo -u "$name" git clone --separate-git-dir="/home/$name/Projects/dotfiles" https://github.com/kriswithank/dotfiles.git /tmp/dotfiles
+  sudo -u "$name" rsync --recursive --verbose --exclude '.git' /tmp/dotfiles "home/$name"
   # TODO switch git to ssh after initial download
   set +x
 }
@@ -324,17 +325,16 @@ numsteps=10
 { installaurhelper 2>&1 | dialog_progress "6/$numsteps Installing AUR helper"; } ||
   confirmerror "Could not install AUR helper"
 
-{ disablesystembeep 2>&1 | dialog_progress "7/$numsteps Diabling system beep"; } ||
+{ cleanupsudoers 2>&1 | dialog_progress "7/$numsteps Cleaning up sudoers"; } ||
+  confirmerror "Could not clean up sudoers"
+
+{ disablesystembeep 2>&1 | dialog_progress "8/$numsteps Diabling system beep"; } ||
   confirmerror "Could not disable system beep"
 
-{ setupdotfiles 2>&1 | dialog_progress "8/$numsteps Setting up dotfiles"; } ||
+{ setupdotfiles 2>&1 | dialog_progress "9/$numsteps Setting up dotfiles"; } ||
   confirmerror "Could not setup dotfiles"
-
-{ cleanupsudoers 2>&1 | dialog_progress "9/$numsteps Cleaning up sudoers"; } ||
-  confirmerror "Could not clean up sudoers"
 
 # TODO:
 # pip/pipx packages
-# temp perms?
 # Clone from backup?
-# dmenu emojis
+# dmenu/st emojis
