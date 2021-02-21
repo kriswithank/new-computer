@@ -291,7 +291,7 @@ setupdotfiles() {
   set -x
   sudo -u "$name" mkdir -p "/home/$name/Projects"
   sudo -u "$name" git clone --separate-git-dir="/home/$name/Projects/dotfiles" https://github.com/kriswithank/dotfiles.git /tmp/dotfiles
-  sudo -u "$name" rsync --recursive --verbose --exclude '.git' /tmp/dotfiles "home/$name"
+  sudo -u "$name" rsync --recursive --verbose --exclude ".git" /tmp/dotfiles "/home/$name"
   # TODO switch git to ssh after initial download
   set +x
 }
