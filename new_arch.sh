@@ -22,7 +22,7 @@ confirmerror() {
 }
 
 dialog_progress() {
-  echo "$1" > "$logfile"
+  echo "$1" >> "$logfile"
   tee -a "$logfile" | dialog --progressbox "$1" 30 1000
 }
 
