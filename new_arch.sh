@@ -22,6 +22,7 @@ confirmerror() {
 }
 
 dialog_progress() {
+  echo "$1" > "$logfile"
   tee -a "$logfile" | dialog --progressbox "$1" 30 1000
 }
 
@@ -306,8 +307,8 @@ numsteps=10
 { installpacmanpkgs 2>&1 | dialog_progress "4/$numsteps Installing pacman packages"; } ||
   confirmerror "Could not install pacman packages"
 
-{ dialog --infobox "5/$numsteps: Creating/updating user" 30 1000 && createuser; } ||
-  exiterror "Problem creating or updating user"
+{ createuser 2>&1 | dialog_progress "5/$numsteps Creating/updating user"; } ||
+  confirmerror "Could not create/update user"
 
 { installaurhelper 2>&1 | dialog_progress "6/$numsteps Installing AUR helper"; } ||
   confirmerror "Could not install AUR helper"
