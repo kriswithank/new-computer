@@ -338,3 +338,4 @@ numsteps=10
 # pip/pipx packages
 # Clone from backup?
 # dmenu/st emojis
+# secrets / ssh's etc
