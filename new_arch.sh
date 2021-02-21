@@ -290,6 +290,7 @@ setupdotfiles() {
   # See https://www.anand-iyer.com/blog/2018/a-simpler-way-to-manage-your-dotfiles.html
   set -x
   sudo -u "$name" mkdir -p "/home/$name/Projects"
+  rm -rf "home/$name/Projects/dotfiles"
   sudo -u "$name" git clone --separate-git-dir="/home/$name/Projects/dotfiles" https://github.com/kriswithank/dotfiles.git /tmp/dotfiles
   sudo -u "$name" rsync --recursive --verbose --exclude ".git" /tmp/dotfiles "/home/$name"
   # TODO switch git to ssh after initial download
@@ -339,3 +340,7 @@ numsteps=10
 # Clone from backup?
 # dmenu/st emojis
 # secrets / ssh's etc
+# Init vim plugins
+# startx
+# wacom
+# virtualbox
