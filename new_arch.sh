@@ -265,7 +265,7 @@ installaurhelper() {
   cd /tmp || return 1
   git clone https://aur.archlinux.org/yay.git
   cd yay || return 1
-  makepkg -si
+  sudo -u "$name" makepkg --noconfirm -si
   set +x
 }
 
