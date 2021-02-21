@@ -78,11 +78,12 @@ refreshkeyring() {
 
 updatesudoers() {
   set -x
+  sed -i "/# SETUPSCRIPT/d" /etc/sudoers  # Clearout old lines from setupscript if they exist
   {
     # Allow wheel users to use sudo
-    echo "%wheel   ALL=(ALL) ALL"
+    echo "%wheel   ALL=(ALL) ALL  # SETUPSCRIPT"
     # Allow wheel users to run the following commands without a password
-    echo "%wheel ALL=(ALL) NOPASSWD: /usr/bin/shutdown,/usr/bin/reboot,/usr/bin/systemctl suspend,/usr/bin/mount,/usr/bin/umount,/usr/bin/pacman -Syu,/usr/bin/pacman -Syyu,/usr/bin/systemctl restart NetworkManager"
+    echo "%wheel ALL=(ALL) NOPASSWD: /usr/bin/shutdown,/usr/bin/reboot,/usr/bin/systemctl suspend,/usr/bin/mount,/usr/bin/umount,/usr/bin/pacman -Syu,/usr/bin/pacman -Syyu,/usr/bin/systemctl restart NetworkManager  # SETUPSCRIPT"
     # Run all sudo commands without a password (required for AUR builds) will be removed afterwards
     echo "%wheel ALL=(ALL) NOPASSWD: ALL  # DELETEME"
   } >> /etc/sudoers
